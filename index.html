@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BOMB MASTER: ULTRA EDITION PRO</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #064e3b;
+            --bg-dark: #020503;
+            --card-bg: #0d1612;
+            --danger: #ef4444;
+            --accent: #fbbf24;
+            --text-muted: #64748b;
+            --rank-color: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background: var(--bg-dark); 
+            color: #fff; 
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 20px;
+            padding-bottom: 100px; 
+        }
+
+        /* --- TOP HUD --- */
+        .hud-top {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--primary);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.1);
+        }
+
+        .stat-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-weight: 800; font-size: 0.9rem; color: #fff; }
+
+        .currency-bar {
+            grid-column: span 2;
+            background: linear-gradient(90deg, #1e293b, #0f172a);
+            border: 1px solid #7c3aed;
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #d8b4fe;
+            font-weight: bold;
+        }
+
+        /* --- PROGRESS SYSTEM --- */
+        .xp-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .xp-container { width: 100%; }
+        .xp-info { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 3px; font-weight: bold; }
+        .xp-track { width: 100%; height: 6px; background: #000; border-radius: 10px; border: 1px solid #1e3a2f; overflow: hidden; }
+        .xp-fill { height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .fill-lv { background: linear-gradient(90deg, var(--primary), #34d399); }
+        .fill-rank { background: linear-gradient(90deg, var(--rank-color), #60a5fa); }
+
+        /* --- NAVIGATION TABS --- */
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #1e3a2f;
+            background: #0d1612;
+            color: var(--text-muted);
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 0.7rem;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* --- CONTENT AREA --- */
+        .content-scroll { flex: 1; overflow-y: auto; padding-right: 5px; }
+
+        /* --- GAME GRID --- */
+        .game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 15px 0; }
+        .tile {
+            aspect-ratio: 1/1;
+            background: #0f172a;
+            border: 2px solid #1e293b;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tile.open { background: var(--primary-dark); border-color: var(--primary); }
+        .tile.bomb { background: #450a0a; border-color: var(--danger); animation: shake 0.4s; }
+
+        /* --- INVENTORY --- */
+        .inventory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .item-card {
+            background: #000;
+            border: 1px dashed var(--primary);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+        }
+        .item-count {
+            position: absolute; top: -5px; right: -5px;
+            background: var(--primary); color: #000;
+            padding: 2px 6px; border-radius: 10px; font-size: 0.6rem; font-weight: 800;
+        }
+
+        /* --- SHOP --- */
+        .shop-category { color: var(--accent); font-size: 0.75rem; font-weight: 900; margin: 15px 0 8px 0; border-bottom: 1px solid #333; padding-bottom: 4px; }
+        .shop-item {
+            background: var(--card-bg);
+            border: 1px solid #1e3a2f;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shop-info b { font-size: 0.85rem; color: var(--primary); }
+        .shop-info small { display: block; font-size: 0.65rem; color: var(--text-muted); max-width: 180px; }
+
+        /* --- FIXED BOTTOM BAR --- */
+        .bottom-action-bar {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 450px;
+            background: rgba(15, 26, 21, 0.98);
+            padding: 15px; border-top: 2px solid var(--primary);
+            display: flex; gap: 10px; z-index: 1000;
+        }
+        .btn-action {
+            flex: 1; padding: 14px; border-radius: 10px; border: none;
+            font-weight: 900; text-transform: uppercase; font-size: 0.8rem;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-secondary { background: #1e293b; color: #fff; }
+
+        /* --- MODALS --- */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .modal { background: #0f1a15; border: 2px solid var(--primary); padding: 20px; border-radius: 20px; width: 100%; max-width: 300px; text-align: center; max-height: 80vh; overflow-y: auto; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="gameRoot" class="game-container"></div>
+
+<script>
+    /* --- CONFIG & 50 ITEMS --- */
+    const CONFIG = {
+        RANKS: ["Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Grandmaster", "Legend", "Mythic", "Immortal"],
+        MODES: {
+            "EASY": { bombs: 1, reward: 50, xp: 20 },
+            "NORMAL": { bombs: 3, reward: 150, xp: 45 },
+            "HARD": { bombs: 5, reward: 400, xp: 100 },
+            "NIGHTMARE": { bombs: 7, reward: 1000, xp: 250 }
+        },
+        SHOP: [
+            { id: 'shield', name: "Standard Shield 🛡️", price: 120, cat: "TACTICAL", desc: "Tahan 1 ledakan bom." },
+            { id: 'radar', name: "Basic Radar 📡", price: 200, cat: "TACTICAL", desc: "Scan 1 kotak aman otomatis." },
+            { id: 'medkit', name: "Exp Booster 🧪", price: 350, cat: "BOOSTER", desc: "Bonus +50% EXP untuk 1 misi." },
+            { id: 'luckycharm', name: "Lucky Coin 🪙", price: 500, cat: "BOOSTER", desc: "Meningkatkan Berry per klik." },
+            { id: 'armor_1', name: "Kevlar Vest 🦺", price: 600, cat: "GEAR", desc: "Mengurangi penalti saat kalah." },
+            { id: 'drone', name: "Spy Drone 🚁", price: 850, cat: "GEAR", desc: "Melihat posisi 1 bom secara acak." },
+            { id: 'glove', name: "Defuse Glove 🧤", price: 300, cat: "TACTICAL", desc: "Klik bom tidak langsung meledak." },
+            { id: 'helmet', name: "Steel Helmet 🪖", price: 450, cat: "GEAR", desc: "Perlindungan kepala ekstra." },
+            { id: 'energy_drink', name: "Energy Soda 🥤", price: 100, cat: "CONSUMABLE", desc: "Mempercepat progres Level." },
+            { id: 'map', name: "Mine Map 🗺️", price: 1200, cat: "TACTICAL", desc: "Membuka 2 kotak aman di awal." },
+            { id: 'shoes', name: "Silent Boots 🥾", price: 700, cat: "GEAR", desc: "Meningkatkan Rank EXP per klik." },
+            { id: 'watch', name: "Tactical Watch ⌚", price: 1500, cat: "LUXURY", desc: "Status simbol agen master." },
+            { id: 'glasses', name: "X-Ray Vision 🕶️", price: 3000, cat: "ULTRA", desc: "Kemungkinan melihat bom tipis-tipis." },
+            { id: 'grenade', name: "Smoke Bomb 💨", price: 250, cat: "TACTICAL", desc: "Menutup jejak jika kalah." },
+            { id: 'radio', name: "Comms Radio 📻", price: 400, cat: "GEAR", desc: "Dapatkan info misi rahasia." },
+            { id: 'keycard', name: "Gold Keycard 💳", price: 5000, cat: "LUXURY", desc: "Akses ke toko VIP kelak." },
+            { id: 'briefcase', name: "Agent Case 💼", price: 2000, cat: "LUXURY", desc: "Menyimpan Berry lebih aman." },
+            { id: 'laptop', name: "Hacker Tool 💻", price: 2500, cat: "ULTRA", desc: "Mengurangi jumlah bom secara paksa." },
+            { id: 'mask', name: "Gas Mask 🎭", price: 800, cat: "GEAR", desc: "Tahan terhadap gas beracun." },
+            { id: 'flashlight', name: "Tactical Light 🔦", price: 150, cat: "GEAR", desc: "Menerangi kotak yang gelap." },
+            { id: 'suit', name: "Black Suit 🕴️", price: 10000, cat: "LUXURY", desc: "Pakaian resmi Agen 007." },
+            { id: 'cigar', name: "Premium Cigar 🚬", price: 150, cat: "CONSUMABLE", desc: "Menambah ketenangan (Gaya)." },
+            { id: 'ring', name: "Diamond Ring 💍", price: 25000, cat: "LUXURY", desc: "Investasi masa depan agen." },
+            { id: 'necklace', name: "Gold Chain ⛓️", price: 15000, cat: "LUXURY", desc: "Pamer kekayaan Berry." },
+            { id: 'car', name: "Spy Car 🚗", price: 100000, cat: "LUXURY", desc: "Kendaraan agen tercepat." },
+            { id: 'jet', name: "Private Jet 🛩️", price: 500000, cat: "ULTRA", desc: "Kendaraan sultan Bomb Master." },
+            { id: 'island', name: "Secret Island 🏝️", price: 1000000, cat: "ULTRA", desc: "Markas besar pribadi Anda." },
+            { id: 'coffee', name: "Hot Coffee ☕", price: 50, cat: "CONSUMABLE", desc: "Sedikit boost Rank EXP." },
+            { id: 'pizza', name: "Agent Pizza 🍕", price: 80, cat: "CONSUMABLE", desc: "Makanan wajib saat misi." },
+            { id: 'sushi', name: "Master Sushi 🍣", price: 200, cat: "CONSUMABLE", desc: "Meningkatkan fokus klik." },
+            { id: 'diamond', name: "Raw Diamond 💎", price: 50000, cat: "LUXURY", desc: "Berlian murni hasil jarahan." },
+            { id: 'trophy', name: "Elite Trophy 🏆", price: 10000, cat: "LUXURY", desc: "Penghargaan agen terbaik." },
+            { id: 'compass', name: "Ancient Compass 🧭", price: 300, cat: "GEAR", desc: "Navigasi kotak lebih akurat." },
+            { id: 'magnifier', name: "Pro Lens 🔍", price: 400, cat: "GEAR", desc: "Cek detail kotak lebih dalam." },
+            { id: 'kit', name: "Repair Kit 🔧", price: 500, cat: "TACTICAL", desc: "Memperbaiki item yang rusak." },
+            { id: 'parchment', name: "Secret Scroll 📜", price: 2000, cat: "ULTRA", desc: "Mantra kuno anti-bom." },
+            { id: 'book', name: "Agent Manual 📖", price: 600, cat: "BOOSTER", desc: "Paham teori defusing (+EXP)." },
+            { id: 'badge', name: "Master Badge 🏅", price: 3000, cat: "LUXURY", desc: "Lencana kehormatan tertinggi." },
+            { id: 'bottle', name: "Elixir 🧪", price: 1000, cat: "BOOSTER", desc: "Ramuan ajaib penambah hoki." },
+            { id: 'sword', name: "Katana ⚔️", price: 4000, cat: "GEAR", desc: "Senjata tajam agen ninja." },
+            { id: 'shield_pro', name: "Aegis Shield 🛡️+", price: 1200, cat: "ULTRA", desc: "Shield kapasitas tinggi." },
+            { id: 'cloak', name: "Invis Cape 🧥", price: 8000, cat: "ULTRA", desc: "Menghilang dari pantauan bom." },
+            { id: 'hat', name: "Spy Fedora 🎩", price: 2500, cat: "LUXURY", desc: "Gaya klasik agen detektif." },
+            { id: 'pipe', name: "Detective Pipe 🪈", price: 1200, cat: "LUXURY", desc: "Berpikir lebih cerdas." },
+            { id: 'safe', name: "Iron Safe 🗄️", price: 5000, cat: "GEAR", desc: "Tempat simpan Berry cadangan." },
+            { id: 'camera', name: "Mini Cam 📷", price: 600, cat: "GEAR", desc: "Rekam pergerakan ranjau." },
+            { id: 'pliers', name: "Wire Cutter ✂️", price: 350, cat: "TACTICAL", desc: "Potong kabel bom dengan aman." },
+            { id: 'battery', name: "Power Cell 🔋", price: 200, cat: "GEAR", desc: "Daya untuk alat elektronik." },
+            { id: 'satellite', name: "Orbital Scan 🛰️", price: 25000, cat: "ULTRA", desc: "Scan seluruh papan (Langka)." },
+            { id: 'crown', name: "King Crown 👑", price: 1000000, cat: "ULTRA", desc: "Anda adalah Raja Bomb Master." }
+        ]
+    };
+
+    /* --- STATE --- */
+    let state = {
+        view: 'lobby',
+        player: JSON.parse(localStorage.getItem('BM_ULTRA_SAVE')) || {
+            name: "Agent 001", lv: 1, exp: 0, rankExp: 0, rankIdx: 0, berry: 500,
+            inv: { shield: 1, radar: 0 }
+        },
+        game: {
+            active: false, mode: "NORMAL", board: [], shieldActive: false, currentBerry: 0
+        }
+    };
+
+    // Fix Rank & RankExp Undefined/Null on Load
+    if (state.player.rankIdx === undefined) state.player.rankIdx = 0;
+    if (state.player.rankExp === undefined || state.player.rankExp === null) state.player.rankExp = 0;
+    if (state.player.exp === undefined || state.player.exp === null) state.player.exp = 0;
+
+    const save = () => localStorage.setItem('BM_ULTRA_SAVE', JSON.stringify(state.player));
+
+    /* --- RENDERER --- */
+    function render() {
+        const root = document.getElementById('gameRoot');
+        root.innerHTML = '';
+
+        const currentRankName = CONFIG.RANKS[state.player.rankIdx] || CONFIG.RANKS[0];
+
+        const hud = `
+            <div class="hud-top">
+                <div class="stat-card"><span class="stat-label">Agent</span><span class="stat-value">${state.player.name}</span></div>
+                <div class="stat-card"><span class="stat-label">Rank</span><span class="stat-value">${currentRankName}</span></div>
+                <div class="currency-bar"><span>🫐 BERRY</span><b>${state.player.berry}</b></div>
+            </div>
+            <div class="xp-group">
+                <div class="xp-container">
+                    <div class="xp-info"><span style="color:var(--primary)">LEVEL ${state.player.lv}</span><span>${state.player.exp}%</span></div>
+                    <div class="xp-track"><div class="xp-fill fill-lv" style="width:${state.player.exp}%"></div></div>
+                </div>
+                <div class="xp-container">
+                    <div class="xp-info"><span style="color:var(--rank-color)">RANK PROGRESS</span><span>${state.player.rankExp}%</span></div>
+                    <div class="xp-track"><div class="xp-fill fill-rank" style="width:${state.player.rankExp}%"></div></div>
+                </div>
+            </div>
+        `;
+
+        if (state.view === 'lobby') {
+            root.innerHTML = hud + `
+                <div class="nav-tabs">
+                    <button class="tab-btn active">MISSIONS</button>
+                    <button class="tab-btn" onclick="setView('inv')">INVENTORY</button>
+                    <button class="tab-btn" onclick="setView('shop')">SHOP</button>
+                </div>
+                <div class="content-scroll">
+                    ${Object.keys(CONFIG.MODES).map(m => `
+                        <button class="tab-btn ${state.game.mode === m ? 'active' : ''}" 
+                            style="text-align:left; display:flex; justify-content:space-between; padding:15px; margin-bottom:8px; width:100%;" 
+                            onclick="state.game.mode='${m}'; render();">
+                            <span>${m}</span>
+                            <span style="color:var(--accent)">💣 ${CONFIG.MODES[m].bombs} BOMBS</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <div class="bottom-action-bar">
+                    <button class="btn-action btn-primary" onclick="initMisi()">START OPERATION</button>
+                </div>
+            `;
+        } 
+        else if (state.view === 'inv') {
+            root.innerHTML = hud + `
+                <div class="nav-tabs">
+                    <button class="tab-btn" onclick="setView('lobby')">BACK</button>
+                    <button class="tab-btn active">INVENTORY</button>
+                </div>
+                <div class="inventory-grid">
+                    ${Object.keys(state.player.inv).filter(k => state.player.inv[k] > 0).map(key => {
+                        const item = CONFIG.SHOP.find(i => i.id === key) || {name: key};
+                        return `
+                            <div class="item-card" onclick="showAction('${key}')">
+                                <div class="item-count">${state.player.inv[key]}</div>
+                                <div style="font-size:1.8rem; margin-bottom:5px;">📦</div>
+                                <div style="font-size:0.6rem; font-weight:bold; color:var(--primary)">${item.name}</div>
+                            </div>
+                        `;
+                    }).join('') || '<p style="grid-column:span 2; text-align:center; padding:40px; color:var(--text-muted)">Empty Bag</p>'}
+                </div>
+            `;
+        }
+        else if (state.view === 'shop') {
+            const categories = [...new Set(CONFIG.SHOP.map(i => i.cat))];
+            root.innerHTML = hud + `
+                <div class="nav-tabs">
+                    <button class="tab-btn" onclick="setView('lobby')">BACK</button>
+                    <button class="tab-btn active">BLACK MARKET</button>
+                </div>
+                <div class="content-scroll">
+                    ${categories.map(cat => `
+                        <div class="shop-category">${cat}</div>
+                        ${CONFIG.SHOP.filter(i => i.cat === cat).map(item => `
+                            <div class="shop-item">
+                                <div class="shop-info">
+                                    <b>${item.name}</b>
+                                    <small>${item.desc}</small>
+                                </div>
+                                <button class="btn-action btn-primary" style="flex:none; padding:8px 12px; font-size:0.65rem;" onclick="buy('${item.id}')">🫐 ${item.price}</button>
+                            </div>
+                        `).join('')}
+                    `).join('')}
+                </div>
+            `;
+        }
+        else if (state.view === 'playing') {
+            root.innerHTML = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div class="stat-card" style="border-color:var(--accent)">
+                        <span class="stat-label">PROTECTION</span>
+                        <span class="stat-value" style="color:var(--accent)">🛡️ ${state.game.shieldActive ? 'ACTIVE' : 'NONE'}</span>
+                    </div>
+                    <div class="stat-card" style="border-color:var(--rank-color)">
+                        <span class="stat-label">EARNED BERRY</span>
+                        <span class="stat-value" style="color:var(--rank-color)">🫐 +${state.game.currentBerry}</span>
+                    </div>
+                </div>
+                <div class="game-grid">
+                    ${state.game.board.map((tile, i) => `
+                        <div class="tile ${tile.open ? 'open' : ''} ${tile.bomb && tile.open ? 'bomb' : ''}" onclick="clickTile(${i})">
+                            ${tile.open ? (tile.bomb ? '💣' : '💎') : '?'}
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="bottom-action-bar">
+                    <button class="btn-action btn-secondary" style="background:#4b5563" onclick="openIngameInv()">🎒 BAG</button>
+                    <button class="btn-action btn-secondary" onclick="abort()">ABORT</button>
+                </div>
+            `;
+        }
+    }
+
+    /* --- LOGIC --- */
+    function setView(v) { state.view = v; render(); }
+
+    function initMisi() {
+        state.view = 'playing';
+        state.game.active = true;
+        state.game.currentBerry = 0;
+        state.game.board = Array(9).fill(null).map(() => ({ bomb: false, open: false }));
+        
+        let b = 0;
+        while(b < CONFIG.MODES[state.game.mode].bombs) {
+            let r = Math.floor(Math.random() * 9);
+            if(!state.game.board[r].bomb) {
+                state.game.board[r].bomb = true;
+                b++;
+            }
+        }
+        render();
+    }
+
+    function clickTile(i) {
+        if(!state.game.active || state.game.board[i].open) return;
+        state.game.board[i].open = true;
+
+        if(state.game.board[i].bomb) {
+            if(state.game.shieldActive) {
+                state.game.shieldActive = false;
+                state.game.board[i].bomb = false; 
+                alert("🛡️ SHIELD PROTECTED YOU!");
+            } else {
+                state.game.active = false;
+                render();
+                setTimeout(() => { alert("💥 MISSION FAILED!"); setView('lobby'); }, 400);
+                return;
+            }
+        } else {
+            state.game.currentBerry += 15;
+            state.player.exp += 5;
+            state.player.rankExp += 3;
+            checkXp();
+        }
+        
+        checkWin();
+        save();
+        render();
+    }
+
+    function checkXp() {
+        if(state.player.exp >= 100) {
+            state.player.lv++;
+            state.player.exp = 0;
+            alert("🔥 LEVEL UP: " + state.player.lv);
+        }
+        if(state.player.rankExp >= 100) {
+            state.player.rankIdx = Math.min(state.player.rankIdx + 1, CONFIG.RANKS.length - 1);
+            state.player.rankExp = 0;
+            alert("🎖️ RANK PROMOTED: " + CONFIG.RANKS[state.player.rankIdx]);
+        }
+    }
+
+    function checkWin() {
+        const opened = state.game.board.filter(t => t.open && !t.bomb).length;
+        const totalSafe = 9 - CONFIG.MODES[state.game.mode].bombs;
+        if(opened === totalSafe) {
+            state.game.active = false;
+            const reward = CONFIG.MODES[state.game.mode].reward;
+            state.player.berry += (state.game.currentBerry + reward);
+            setTimeout(() => {
+                alert(`🏆 VICTORY!\nBonus: 🫐${reward} Berry`);
+                setView('lobby');
+            }, 300);
+        }
+    }
+
+    function buy(id) {
+        const item = CONFIG.SHOP.find(i => i.id === id);
+        if(state.player.berry >= item.price) {
+            state.player.berry -= item.price;
+            state.player.inv[id] = (state.player.inv[id] || 0) + 1;
+            save();
+            alert("✅ Purchased: " + item.name);
+            render();
+        } else alert("❌ Not enough Berry!");
+    }
+
+    /* --- IN-GAME INVENTORY SYSTEM --- */
+    function openIngameInv() {
+        const modal = document.createElement('div');
+        modal.className = 'overlay';
+        modal.id = 'ingameInv';
+        
+        let itemsHtml = Object.keys(state.player.inv)
+            .filter(k => state.player.inv[k] > 0)
+            .map(key => {
+                const item = CONFIG.SHOP.find(i => i.id === key);
+                return `
+                    <div style="background:#1e293b; padding:10px; border-radius:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="text-align:left">
+                            <div style="font-weight:bold; font-size:0.8rem; color:var(--primary)">${item.name}</div>
+                            <div style="font-size:0.6rem; color:var(--text-muted)">Qty: ${state.player.inv[key]}</div>
+                        </div>
+                        <button class="btn-action btn-primary" style="flex:none; padding:5px 15px; font-size:0.7rem;" onclick="use('${key}', true)">USE</button>
+                    </div>
+                `;
+            }).join('');
+
+        modal.innerHTML = `
+            <div class="modal">
+                <div style="font-size:1.2rem; color:var(--primary); margin-bottom:15px; font-weight:bold;">🎒 FIELD INVENTORY</div>
+                <div style="max-height:250px; overflow-y:auto; margin-bottom:15px;">
+                    ${itemsHtml || '<p style="color:var(--text-muted); font-size:0.8rem;">Your bag is empty.</p>'}
+                </div>
+                <button class="btn-action btn-secondary" style="width:100%;" onclick="this.parentElement.parentElement.remove()">CLOSE</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    function showAction(id) {
+        const item = CONFIG.SHOP.find(i => i.id === id);
+        const modal = document.createElement('div');
+        modal.className = 'overlay';
+        modal.innerHTML = `
+            <div class="modal">
+                <div style="font-size:1.2rem; color:var(--primary); margin-bottom:10px;">${item.name}</div>
+                <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:20px;">${item.desc}</p>
+                <button class="btn-action btn-primary" style="width:100%; margin-bottom:10px;" onclick="use('${id}')">USE ITEM</button>
+                <button class="btn-action btn-secondary" style="width:100%;" onclick="this.parentElement.parentElement.remove()">CLOSE</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    function use(id, isIngame = false) {
+        if(state.player.inv[id] <= 0) return;
+
+        if(id === 'shield' || id === 'shield_pro') {
+            state.game.shieldActive = true;
+            state.player.inv[id]--;
+            alert("🛡️ Shield Enabled!");
+        } else if(id === 'radar') {
+            if(state.view === 'playing' && state.game.active) {
+                const safeTiles = state.game.board.filter(t => !t.bomb && !t.open);
+                if(safeTiles.length > 0) {
+                    const randomSafe = safeTiles[Math.floor(Math.random() * safeTiles.length)];
+                    randomSafe.open = true;
+                    state.player.inv[id]--;
+                    alert("📡 Radar: Safe tile found!");
+                } else {
+                    alert("Radar cannot find more safe tiles!");
+                }
+            } else {
+                alert("Radar only works during a mission!");
+                return;
+            }
+        } else {
+            alert("⚡ Item used: " + id);
+            state.player.inv[id]--;
+        }
+
+        const currentModal = document.querySelector('.overlay');
+        if(currentModal) currentModal.remove();
+        
+        save();
+        render();
+    }
+
+    function abort() { if(confirm("Quit? All earned Berry in this mission will be lost.")) setView('lobby'); }
+
+    render();
+</script>
+</body>
+</html>
